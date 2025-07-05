@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 import concurrent.futures
 import time
 
-def fetch_hackernews(limit=1):
+def fetch_hackernews(limit=10):
     top_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
     item_url = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
