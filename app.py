@@ -10,6 +10,7 @@ def run_bot():
 demo = gr.Interface(fn=run_bot,
                     inputs=[],
                     outputs="markdown",
-                    title="🔥 AI 新闻机器人 (Hacker News 中文摘要)",
-                    description="点击按钮即可查看最新热点新闻（自动翻译）")
+                    title="巨头的AI",
+                    description="点击按钮即可查看最新热点新闻",
+                    allow_flagging="never")
 demo.launch()
