@@ -1,11 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-import os
+from config import GOOGLE_API_KEY
 
-google_api_key = os.getenv("GOOGLE_API_KEY")
-if not google_api_key:
-    raise ValueError("GOOGLE_API_KEY environment variable is not set.")
-
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=google_api_key)
+llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=GOOGLE_API_KEY)
 
 def translate_titles(titles):
     translated = []
