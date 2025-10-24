@@ -10,7 +10,7 @@ def fetch_hackernews(limit=10):
     try:
         ids = requests.get(top_url).json()[:limit]
     except Exception as e:
-        print("⚠️ 获取热门故事 ID 失败:", e)
+        print("failed to fetch top stories:", e)
         return []
 
     def get_story(story_id):

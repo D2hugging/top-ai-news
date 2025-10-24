@@ -10,4 +10,5 @@ def translate_titles(titles):
         print(f"[DEBUG] Translating: {title}")
         response = llm.invoke(prompt)
         translated.append(response.content.strip())
+
     return translated
