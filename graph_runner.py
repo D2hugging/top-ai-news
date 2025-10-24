@@ -33,11 +33,21 @@ def node_send_discord(state: NewsState):
         print("DISCORD_WEBHOOK_URL not set, skipping notification.")
         return
 
-    markdown_content = state["markdown"]
-    # send to discord channel in chunks of 1900 characters
-    for i in range(0, len(markdown_content), 1900):
-        chunk = markdown_content[i:i+1900]
-        requests.post(webhook_url, json={"content": chunk})
+    # split by "\n"
+    parts = state["markdown"].split("\n")
+    header = parts[0]
+    news_items_str = ["\n".join(parts[i:i+2]) for i in range(1, len(parts), 2)]
+
+    # send in chunks to avoid exceeding Discord message length limits
+    message_chunk = header + "\n"
+    for item_str in news_items_str:
+        if len(message_chunk) + len(item_str) + 1 > 2000:
+            requests.post(webhook_url, json={"content": message_chunk})
+            message_chunk = ""  # new chunk
+        message_chunk += item_str + "\n"
+
+    if message_chunk:  # the last chunk
+        requests.post(webhook_url, json={"content": message_chunk})
 
 
 def build_graph():
