@@ -42,7 +42,7 @@ async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks)
     A secure endpoint to trigger a one-time task.
     Requires a secret token provided via the 'Authorization' header.
     """
-    secret_token = os.getenv("SCHEDULER_SECRET")
+    secret_token = os.getenv("HF_TOKEN")
     auth_header = request.headers.get("Authorization")
 
     if not secret_token or auth_header != f"Bearer {secret_token}":
