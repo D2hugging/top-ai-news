@@ -1,8 +1,7 @@
-import gradio as gr_module
-import logging
-import gradio as gr
-from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 import os
+import logging
+from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+import gradio as gr
 from graph_runner import build_graph
 
 logging.basicConfig(
@@ -11,9 +10,34 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
+# 创建 FastAPI 应用
 app = FastAPI()
 
 
+@app.post("/v1/news/fetch")
+async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
+    logging.info(f"API /v1/news/fetch called from {request.client.host}")
+
+    # Token 校验（与 Space Secret 对应）
+    secret_token = os.getenv("HF_TOKEN")
+    auth_header = request.headers.get("Authorization")
+    if secret_token and auth_header != f"Bearer {secret_token}":
+        logging.warning("Unauthorized access attempt.")
+        raise HTTPException(
+            status_code=403, detail="Forbidden: Invalid or missing token.")
+
+    def run_once():
+        logging.info("Running the graph once for API call...")
+        graph = build_graph()
+        result = graph.invoke({})
+        logging.info("Graph execution finished.")
+        logging.info(result.get("markdown", "No markdown content generated."))
+
+    background_tasks.add_task(run_once)
+    return {"status": "accepted", "message": "Task running in background."}
+
+
+# 定义 Gradio 接口（UI）
 def run_bot():
     graph = build_graph()
     result = graph.invoke({})
@@ -29,30 +53,8 @@ iface = gr.Interface(
     allow_flagging="never",
 )
 
-app = gr_module.mount_gradio_app(app, iface, path="/")  # 主入口是Gradio页面
-
-
-@app.post("/v1/news/fetch")
-async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
-    logging.info(f"API /api/run-task called from {request.client.host}")
-    secret_token = os.getenv("HF_TOKEN")
-    auth_header = request.headers.get("Authorization")
-    if secret_token and auth_header != f"Bearer {secret_token}":
-        logging.warning(
-            "Unauthorized access attempt to /api/run-task endpoint.")
-        raise HTTPException(
-            status_code=403, detail="Forbidden: Invalid or missing token.")
-
-    def run_once():
-        logging.info("Running the graph once for API call...")
-        graph = build_graph()
-        result = graph.invoke({})
-        logging.info("Graph execution finished for API call.")
-        logging.info(result.get("markdown", "No markdown content generated."))
-        return result
-    background_tasks.add_task(run_once)
-    logging.info("Task accepted and scheduled in background for API call.")
-    return {"status": "accepted", "message": "Task has been accepted and is running in the background."}
+# 挂载 Gradio 到 FastAPI 子路径
+app = gr.mount_gradio_app(app, iface, path="/ui")
 
 if __name__ == "__main__":
     import uvicorn
