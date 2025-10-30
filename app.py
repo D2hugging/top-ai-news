@@ -4,15 +4,25 @@ import argparse
 import os
 import uvicorn
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+import logging
+
+
+# Configure logging with timestamp
+logging.basicConfig(
+    format="%(asctime)s %(levelname)s %(message)s",
+    level=logging.INFO,
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 
 def run_once():
     """Executes the complete task once and returns the result."""
-    print("Running the graph once for scheduled execution...")
+    logging.info("Running the graph once for scheduled execution...")
     graph = build_graph()
     result = graph.invoke({})
-    print("Graph execution finished. Markdown content generated and notifications sent.")
-    print(result.get("markdown", "No markdown content generated."))
+    logging.info(
+        "Graph execution finished. Markdown content generated and notifications sent.")
+    logging.info(result.get("markdown", "No markdown content generated."))
     return result
 
 
@@ -46,10 +56,12 @@ async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks)
     auth_header = request.headers.get("Authorization")
 
     if not secret_token or auth_header != f"Bearer {secret_token}":
+        logging.warning("Unauthorized access attempt to /run-task endpoint.")
         raise HTTPException(
             status_code=403, detail="Forbidden: Invalid or missing token.")
 
     background_tasks.add_task(run_once)
+    logging.info("Task accepted and scheduled in background.")
     return {"status": "accepted", "message": "Task has been accepted and is running in the background."}
 
 
