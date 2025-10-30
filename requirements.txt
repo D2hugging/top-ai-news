@@ -4,3 +4,4 @@ langchain-google-genai
 requests
 fastapi
 uvicorn
+gradio
