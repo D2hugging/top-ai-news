@@ -2,7 +2,6 @@ import gradio as gr_module
 import logging
 import gradio as gr
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
-from fastapi.responses import RedirectResponse
 import os
 from graph_runner import build_graph
 
@@ -12,10 +11,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# --------- FastAPI main app ---------
 app = FastAPI()
-
-# --------- Gradio UI as /gradio ---------
 
 
 def run_bot():
@@ -32,22 +28,15 @@ iface = gr.Interface(
     description="Get the top news from Hacker News",
     allow_flagging="never",
 )
-app = gr_module.mount_gradio_app(app, iface, path="/gradio")
 
-# --------- Set root to auto redirect web visitors to /gradio ---------
-
-
-@app.get("/")
-def root():
-    return RedirectResponse(url="/gradio")
+app = gr_module.mount_gradio_app(app, iface, path="/")  # 主入口是Gradio页面
 
 
-@app.post("/api/run-task")
+@app.post("/v1/news/fetch")
 async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
     logging.info(f"API /api/run-task called from {request.client.host}")
     secret_token = os.getenv("HF_TOKEN")
     auth_header = request.headers.get("Authorization")
-
     if secret_token and auth_header != f"Bearer {secret_token}":
         logging.warning(
             "Unauthorized access attempt to /api/run-task endpoint.")
