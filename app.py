@@ -6,7 +6,6 @@ from fastapi.responses import RedirectResponse
 import os
 from graph_runner import build_graph
 
-# --------- logging: keep time format ---------
 logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s",
     level=logging.INFO,
@@ -41,8 +40,6 @@ app = gr_module.mount_gradio_app(app, iface, path="/gradio")
 @app.get("/")
 def root():
     return RedirectResponse(url="/gradio")
-
-# --------- Your API logic under /api/ ---------
 
 
 @app.post("/api/run-task")
