@@ -1,7 +1,9 @@
 import os
 import logging
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
+from fastapi.responses import JSONResponse
 import gradio as gr
+from gradio.routes import mount_gradio_app
 from graph_runner import build_graph
 
 logging.basicConfig(
@@ -10,15 +12,14 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# 创建 FastAPI 应用
-app = FastAPI()
+app = FastAPI(title="Hacker Top News")
 
 
 @app.post("/v1/news/fetch")
 async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
+    """供 GitHub Action 调用的接口"""
     logging.info(f"API /v1/news/fetch called from {request.client.host}")
 
-    # Token 校验（与 Space Secret 对应）
     secret_token = os.getenv("HF_TOKEN")
     auth_header = request.headers.get("Authorization")
     if secret_token and auth_header != f"Bearer {secret_token}":
@@ -34,10 +35,15 @@ async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks)
         logging.info(result.get("markdown", "No markdown content generated."))
 
     background_tasks.add_task(run_once)
-    return {"status": "accepted", "message": "Task running in background."}
+    return JSONResponse({"status": "accepted", "message": "Task running in background."})
 
 
-# 定义 Gradio 接口（UI）
+@app.get("/api/ping")
+def ping():
+    """健康检查"""
+    return JSONResponse({"status": "ok", "app": "Hacker Top News"})
+
+
 def run_bot():
     graph = build_graph()
     result = graph.invoke({})
@@ -49,12 +55,11 @@ iface = gr.Interface(
     inputs=[],
     outputs="markdown",
     title="Hacker Top News",
-    description="Get the top news from Hacker News",
+    description="Fetch top stories from Hacker News using LangGraph.",
     allow_flagging="never",
 )
 
-# 挂载 Gradio 到 FastAPI 子路径
-app = gr.mount_gradio_app(app, iface, path="/ui")
+app = mount_gradio_app(app, iface, path="/")
 
 if __name__ == "__main__":
     import uvicorn
