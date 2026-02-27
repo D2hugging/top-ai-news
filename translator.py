@@ -1,7 +1,7 @@
-from langchain_google_genai import ChatGoogleGenerativeAI
-from config import GOOGLE_API_KEY
+from langchain_anthropic import ChatAnthropic
+from config import ANTHROPIC_API_KEY
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=GOOGLE_API_KEY)
+llm = ChatAnthropic(model="claude-haiku-4-5-20251001", anthropic_api_key=ANTHROPIC_API_KEY)
 
 def translate_titles(titles):
     translated = []
