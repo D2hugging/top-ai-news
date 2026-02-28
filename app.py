@@ -2,8 +2,6 @@ import os
 import logging
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
-import gradio as gr
-from gradio.routes import mount_gradio_app
 from graph_runner import build_graph
 
 logging.basicConfig(
@@ -43,23 +41,6 @@ def ping():
     """健康检查"""
     return JSONResponse({"status": "ok", "app": "Hacker Top News"})
 
-
-def run_bot():
-    graph = build_graph()
-    result = graph.invoke({})
-    return result["markdown"]
-
-
-iface = gr.Interface(
-    fn=run_bot,
-    inputs=[],
-    outputs="markdown",
-    title="Hacker Top News",
-    description="Fetch top stories from Hacker News using LangGraph.",
-    allow_flagging="never",
-)
-
-app = mount_gradio_app(app, iface, path="/")
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,6 +1,7 @@
 import os
 
+LOCAL_LLM_URL = os.getenv("LOCAL_LLM_URL")  # e.g. http://localhost:8080/v1
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 
-if not GOOGLE_API_KEY:
-    raise RuntimeError("please set environment variable GOOGLE_API_KEY")
+if not LOCAL_LLM_URL and not GOOGLE_API_KEY:
+    raise RuntimeError("please set GOOGLE_API_KEY or LOCAL_LLM_URL")

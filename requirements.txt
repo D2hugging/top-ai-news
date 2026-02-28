@@ -1,8 +1,8 @@
 langgraph
 langchain
 langchain-google-genai
+langchain-openai
 requests
 fastapi
 uvicorn
-gradio
 feedparser

@@ -1,0 +1,15 @@
+# uv
+.venv/
+.uv/
+uv.lock
+main.py
+pyproject.toml
+.python-version
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+CLAUDE.md
