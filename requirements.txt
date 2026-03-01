@@ -1,4 +1,5 @@
 langgraph
+huggingface_hub
 langchain
 langchain-google-genai
 langchain-openai

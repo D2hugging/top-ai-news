@@ -6,6 +6,7 @@ from news_sources import fetch_hackernews, fetch_google_news, fetch_meta_news, f
 from translator import translate_titles
 from formatter import format_markdown
 from curator import curate_items
+from persistence import load_recent_urls, save_urls
 
 
 class NewsState(TypedDict):
@@ -22,6 +23,12 @@ def node_fetch_all(state: NewsState):
         + fetch_nvidia_news()
     )
     return {"items": items}
+
+
+def node_dedup(state: NewsState):
+    seen = load_recent_urls()
+    fresh = [item for item in state["items"] if item["url"] not in seen]
+    return {"items": fresh}
 
 
 def node_curate(state: NewsState):
@@ -59,11 +66,14 @@ def node_send_discord(state: NewsState):
     if message_chunk:  # the last chunk
         requests.post(webhook_url, json={"content": message_chunk})
 
+    save_urls(state["items"])
+
 
 def build_graph():
     builder = StateGraph(NewsState)
     # add nodes
     builder.add_node("fetch_all", node_fetch_all)
+    builder.add_node("dedup", node_dedup)
     builder.add_node("curate", node_curate)
     builder.add_node("translate", node_translate)
     builder.add_node("format", node_format)
@@ -71,7 +81,8 @@ def build_graph():
 
     # add edges
     builder.set_entry_point("fetch_all")
-    builder.add_edge("fetch_all", "curate")
+    builder.add_edge("fetch_all", "dedup")
+    builder.add_edge("dedup", "curate")
     builder.add_edge("curate", "translate")
     builder.add_edge("translate", "format")
     builder.add_edge("format", "send_discord")
