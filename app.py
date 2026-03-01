@@ -13,6 +13,11 @@ logging.basicConfig(
 app = FastAPI(title="Hacker Top News")
 
 
+@app.get("/")
+def root():
+    return JSONResponse({"status": "ok", "endpoints": ["/v1/news/fetch", "/api/ping"]})
+
+
 @app.post("/v1/news/fetch")
 async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
     """供 GitHub Action 调用的接口"""
