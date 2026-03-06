@@ -8,7 +8,7 @@ HF_DATASET_REPO = os.getenv("HF_DATASET_REPO")  # "hf-username/news-urls"
 HF_TOKEN = os.getenv("HF_TOKEN")
 RECENT_DAYS = 180
 RECENT_FILE = "recent_urls.json"   # {url: date} — rolling 180 days, used for dedup
-ALL_FILE = "all_urls.json"         # [{url, date}, ...] — append-only, full history
+ALL_FILE = "all_urls.json"         # [{url, added}, ...] — append-only, full history
 
 
 def _download(filename: str):
@@ -47,7 +47,7 @@ def load_recent_urls() -> set:
         logging.warning("[persistence] HF_DATASET_REPO not set, dedup skipped")
         return set()
     recent = _download(RECENT_FILE)
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d")
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
     seen = {url for url, date in recent.items() if date >= cutoff}
     logging.info(f"[persistence] loaded {len(seen)} seen URLs")
     return seen
@@ -57,20 +57,20 @@ def save_urls(items: list):
     if not HF_DATASET_REPO:
         logging.warning("[persistence] HF_DATASET_REPO not set, URLs not saved")
         return
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     new_urls = {item["url"] for item in items}
 
     # update recent_urls.json — rolling 180 days, preserve original date
     recent = _download(RECENT_FILE)
     for url in new_urls:
         if url not in recent:
-            recent[url] = today
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d")
+            recent[url] = now
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d %H:%M:%S")
     recent = {url: date for url, date in recent.items() if date >= cutoff}
     _upload(RECENT_FILE, recent)
 
     # update all_urls.json — append only, no duplicates
     all_urls = _download(ALL_FILE)
     existing = {entry["url"] for entry in all_urls}
-    all_urls.extend({"url": url, "date": today} for url in new_urls if url not in existing)
+    all_urls.extend({"url": url, "added": now} for url in new_urls if url not in existing)
     _upload(ALL_FILE, all_urls)
