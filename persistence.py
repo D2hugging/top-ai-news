@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from datetime import datetime, timezone, timedelta
 from huggingface_hub import hf_hub_download, upload_file
@@ -21,7 +22,8 @@ def _download(filename: str):
         )
         with open(path) as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        logging.warning(f"[persistence] failed to download {filename}: {e}, dedup skipped")
         return {} if filename == RECENT_FILE else []
 
 
@@ -50,9 +52,11 @@ def save_urls(items: list):
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     new_urls = {item["url"] for item in items}
 
-    # update recent_urls.json — rolling 180 days
+    # update recent_urls.json — rolling 180 days, preserve original date
     recent = _download(RECENT_FILE)
-    recent.update({url: today for url in new_urls})
+    for url in new_urls:
+        if url not in recent:
+            recent[url] = today
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d")
     recent = {url: date for url, date in recent.items() if date >= cutoff}
     _upload(RECENT_FILE, recent)
