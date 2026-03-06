@@ -28,26 +28,34 @@ def _download(filename: str):
 
 
 def _upload(filename: str, data):
-    upload_file(
-        path_or_fileobj=json.dumps(data, ensure_ascii=False, indent=2).encode(),
-        path_in_repo=filename,
-        repo_id=HF_DATASET_REPO,
-        repo_type="dataset",
-        token=HF_TOKEN,
-        commit_message=f"update {filename}",
-    )
+    try:
+        upload_file(
+            path_or_fileobj=json.dumps(data, ensure_ascii=False, indent=2).encode(),
+            path_in_repo=filename,
+            repo_id=HF_DATASET_REPO,
+            repo_type="dataset",
+            token=HF_TOKEN,
+            commit_message=f"update {filename}",
+        )
+        logging.info(f"[persistence] uploaded {filename}")
+    except Exception as e:
+        logging.error(f"[persistence] failed to upload {filename}: {e}")
 
 
 def load_recent_urls() -> set:
     if not HF_DATASET_REPO:
+        logging.warning("[persistence] HF_DATASET_REPO not set, dedup skipped")
         return set()
     recent = _download(RECENT_FILE)
     cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENT_DAYS)).strftime("%Y-%m-%d")
-    return {url for url, date in recent.items() if date >= cutoff}
+    seen = {url for url, date in recent.items() if date >= cutoff}
+    logging.info(f"[persistence] loaded {len(seen)} seen URLs")
+    return seen
 
 
 def save_urls(items: list):
     if not HF_DATASET_REPO:
+        logging.warning("[persistence] HF_DATASET_REPO not set, URLs not saved")
         return
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     new_urls = {item["url"] for item in items}

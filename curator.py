@@ -15,12 +15,13 @@ SOURCES = {
 }
 
 
-def curate_items(items: list, top_n: int = 15) -> list:
+def curate_items(items: list, top_n: int = 15, seen_urls: set = None) -> list:
     if not items:
         return []
 
     session_items = list(items)
     result = {"selected": []}
+    _seen_urls = seen_urls or set()
 
     @tool
     def fetch_more(source: str, limit: int = 10) -> str:
@@ -30,7 +31,7 @@ def curate_items(items: list, top_n: int = 15) -> list:
         if source not in SOURCES:
             return f"Unknown source '{source}'. Choose from: {list(SOURCES.keys())}"
         new_items = SOURCES[source](min(limit, 30))
-        existing_urls = {item["url"] for item in session_items}
+        existing_urls = {item["url"] for item in session_items} | _seen_urls
         new_items = [i for i in new_items if i["url"] not in existing_urls]
         session_items.extend(new_items)
         offset = len(session_items) - len(new_items)

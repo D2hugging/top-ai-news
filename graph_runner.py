@@ -13,6 +13,7 @@ class NewsState(TypedDict):
     items: List[dict]
     translated: List[str]
     markdown: str
+    seen_urls: List[str]
 
 
 def node_fetch_all(state: NewsState):
@@ -28,11 +29,12 @@ def node_fetch_all(state: NewsState):
 def node_dedup(state: NewsState):
     seen = load_recent_urls()
     fresh = [item for item in state["items"] if item["url"] not in seen]
-    return {"items": fresh}
+    return {"items": fresh, "seen_urls": list(seen)}
 
 
 def node_curate(state: NewsState):
-    return {"items": curate_items(state["items"])}
+    seen_urls = set(state.get("seen_urls") or [])
+    return {"items": curate_items(state["items"], seen_urls=seen_urls)}
 
 
 def node_translate(state: NewsState):
