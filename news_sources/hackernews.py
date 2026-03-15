@@ -1,38 +1,34 @@
 import requests
-from datetime import datetime, timezone
 import concurrent.futures
-import time
+from datetime import datetime, timezone
+from .base import NewsSource
 
-def fetch_hackernews(limit=10):
-    top_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
-    item_url = "https://hacker-news.firebaseio.com/v0/item/{}.json"
 
-    try:
-        ids = requests.get(top_url).json()[:limit]
-    except Exception as e:
-        print("failed to fetch top stories:", e)
-        return []
+class HackerNewsSource(NewsSource):
+    name = "hackernews"
 
-    def get_story(story_id):
+    def fetch(self, limit=10):
+        top_url = "https://hacker-news.firebaseio.com/v0/topstories.json"
+        item_url = "https://hacker-news.firebaseio.com/v0/item/{}.json"
+
         try:
-            res = requests.get(item_url.format(story_id)).json()
-            title = res.get("title", "Untitled")
-            url = res.get("url") or f"https://news.ycombinator.com/item?id={story_id}"
-            score = res.get("score", 0)
-            ts = res.get("time", 0)
-            dt = datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d")
-            return {
-                "title": title,
-                "url": url,
-                "points": score,
-                "created_at": dt
-            }
+            ids = requests.get(top_url).json()[:limit]
         except Exception as e:
-            return None
+            print("failed to fetch top stories:", e)
+            return []
 
-    items = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        for story in executor.map(get_story, ids):
-            if story: items.append(story)
+        def get_story(story_id):
+            try:
+                res = requests.get(item_url.format(story_id)).json()
+                ts = res.get("time", 0)
+                return {
+                    "title": res.get("title", "Untitled"),
+                    "url": res.get("url") or f"https://news.ycombinator.com/item?id={story_id}",
+                    "points": res.get("score", 0),
+                    "created_at": datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d"),
+                }
+            except Exception:
+                return None
 
-    return items
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            return [s for s in executor.map(get_story, ids) if s]

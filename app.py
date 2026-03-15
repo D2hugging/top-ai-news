@@ -2,6 +2,7 @@ import os
 import logging
 from fastapi import FastAPI, Request, HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse
+from config import reload_config
 from graph_runner import build_graph
 
 logging.basicConfig(
@@ -20,7 +21,7 @@ def root():
 
 @app.post("/v1/news/fetch")
 async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks):
-    """供 GitHub Action 调用的接口"""
+    """api for GitHub Action call"""
     logging.info(f"API /v1/news/fetch called from {request.client.host}")
 
     secret_token = os.getenv("HF_TOKEN")
@@ -41,9 +42,17 @@ async def run_task_endpoint(request: Request, background_tasks: BackgroundTasks)
     return JSONResponse({"status": "accepted", "message": "Task running in background."})
 
 
+@app.post("/api/reload-config")
+def api_reload_config():
+    """Reload config.yaml without restarting the app."""
+    reload_config()
+    logging.info("config.yaml reloaded")
+    return JSONResponse({"status": "reloaded"})
+
+
 @app.get("/api/ping")
 def ping():
-    """健康检查"""
+    """health check"""
     return JSONResponse({"status": "ok", "app": "Hacker Top News"})
 
 

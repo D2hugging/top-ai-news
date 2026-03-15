@@ -2,7 +2,8 @@ from langgraph.graph import StateGraph, END
 from typing import TypedDict, List
 import os
 import requests
-from news_sources import fetch_hackernews, fetch_google_news, fetch_meta_news, fetch_nvidia_news
+from config import CONFIG
+from news_sources import fetch_all
 from translator import translate_titles
 from formatter import format_markdown
 from curator import curate_items
@@ -17,13 +18,7 @@ class NewsState(TypedDict):
 
 
 def node_fetch_all(state: NewsState):
-    items = (
-        fetch_hackernews()
-        + fetch_google_news()
-        + fetch_meta_news()
-        + fetch_nvidia_news()
-    )
-    return {"items": items}
+    return {"items": fetch_all()}
 
 
 def node_dedup(state: NewsState):
@@ -58,9 +53,10 @@ def node_send_discord(state: NewsState):
     news_items_str = ["\n".join(parts[i:i+2]) for i in range(1, len(parts), 2)]
 
     # send in chunks to avoid exceeding Discord message length limits
+    chunk_size = CONFIG.get("discord", {}).get("chunk_size", 2000)
     message_chunk = header + "\n"
     for item_str in news_items_str:
-        if len(message_chunk) + len(item_str) + 1 > 2000:
+        if len(message_chunk) + len(item_str) + 1 > chunk_size:
             requests.post(webhook_url, json={"content": message_chunk})
             message_chunk = ""  # new chunk
         message_chunk += item_str + "\n"

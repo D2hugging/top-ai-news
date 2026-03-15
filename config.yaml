@@ -1,0 +1,24 @@
+llm:
+  gemini_model: gemini-2.5-flash
+  local_model: qwen3-4b
+  enable_thinking: false
+
+curator:
+  top_n: 15
+
+discord:
+  chunk_size: 2000
+
+sources:
+  hackernews:
+    enabled: true
+    limit: 10
+  google:
+    enabled: false
+    limit: 10
+  meta:
+    enabled: false
+    limit: 10
+  nvidia:
+    enabled: false
+    limit: 10

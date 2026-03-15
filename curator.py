@@ -2,20 +2,15 @@ from typing import List
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from llm import get_llm
-from news_sources import fetch_hackernews, fetch_google_news, fetch_meta_news, fetch_nvidia_news
+from config import CONFIG
+from news_sources import REGISTRY
 
 
 llm = get_llm()
 
-SOURCES = {
-    "hackernews": fetch_hackernews,
-    "google": fetch_google_news,
-    "meta": fetch_meta_news,
-    "nvidia": fetch_nvidia_news,
-}
-
-
-def curate_items(items: list, top_n: int = 15, seen_urls: set = None) -> list:
+def curate_items(items: list, top_n: int | None = None, seen_urls: set = None) -> list:
+    if top_n is None:
+        top_n = CONFIG.get("curator", {}).get("top_n", 15)
     if not items:
         return []
 
@@ -28,9 +23,9 @@ def curate_items(items: list, top_n: int = 15, seen_urls: set = None) -> list:
         """Fetch additional news items from a specific source when current results are
         insufficient or lack diversity. source must be one of: hackernews, google, meta, nvidia.
         limit is the number of additional items to fetch (max 30)."""
-        if source not in SOURCES:
-            return f"Unknown source '{source}'. Choose from: {list(SOURCES.keys())}"
-        new_items = SOURCES[source](min(limit, 30))
+        if source not in REGISTRY:
+            return f"Unknown source '{source}'. Choose from: {list(REGISTRY.keys())}"
+        new_items = REGISTRY[source].fetch(min(limit, 30))
         existing_urls = {item["url"] for item in session_items} | _seen_urls
         new_items = [i for i in new_items if i["url"] not in existing_urls]
         session_items.extend(new_items)

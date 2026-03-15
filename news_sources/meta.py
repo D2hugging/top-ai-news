@@ -1,13 +1,13 @@
 import feedparser
+from .base import NewsSource
 
 
-def fetch_meta_news(limit=10):
-    feed = feedparser.parse("https://engineering.fb.com/feed/")
-    items = []
-    for entry in feed.entries[:limit]:
-        items.append({
-            "title": entry.title,
-            "url": entry.link,
-            "created_at": entry.get("published", "")[:10],
-        })
-    return items
+class MetaNewsSource(NewsSource):
+    name = "meta"
+
+    def fetch(self, limit=10):
+        feed = feedparser.parse("https://engineering.fb.com/feed/")
+        return [
+            {"title": e.title, "url": e.link, "created_at": e.get("published", "")[:10]}
+            for e in feed.entries[:limit]
+        ]
